@@ -9,7 +9,8 @@ import Data.Foreign (ForeignError)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.List.NonEmpty (NonEmptyList)
-import Simple.JSON.GenericSum (genericReadForeignGenericSumJSON)
+import Simple.JSON (class ReadForeign, readJSON)
+import Simple.JSON.GenericSum (genericReadForeignGenericSum, genericReadForeignGenericSumJSON)
 import Test.Spec (describe, it, pending)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -23,6 +24,8 @@ data Fruit
 derive instance gFruit :: Generic Fruit _
 instance sFruit :: Show Fruit where
   show = genericShow
+instance rfFruit :: ReadForeign Fruit where
+  readImpl = genericReadForeignGenericSum
 
 main :: Eff (RunnerEffects ()) Unit
 main = run [consoleReporter] do
@@ -37,7 +40,7 @@ main = run [consoleReporter] do
       """
 
       a :: Either (NonEmptyList ForeignError) Fruit
-      a = runExcept $ genericReadForeignGenericSumJSON testJSON1
+      a = readJSON testJSON1
 
     pending $ show a
     -- (Right (Thing { color: "purple", count: 1, name: "watermelon" }))
