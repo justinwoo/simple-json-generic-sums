@@ -4,8 +4,8 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Control.Monad.Except (throwError)
-import Data.Foreign (F, Foreign, ForeignError(..), readString)
-import Data.Foreign.Index (readProp)
+import Data.Foreign (F, Foreign, ForeignError(ForeignError), readString)
+import Data.Foreign.Index (readIndex, readProp)
 import Data.Foreign.JSON (parseJSON)
 import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Field(..), NoArguments(..), Product(..), Rec(..), Sum(..), to)
 import Data.Record (get)
@@ -45,6 +45,24 @@ instance rtfProduct ::
   recordToFields r =
     Product (recordToFields r) (recordToFields r)
 
+class ReadForeignGenericProduct a where
+  readForeignGenericProduct :: Int -> Foreign -> F a
+
+instance rfgpProduct ::
+  ( ReadForeignGenericProduct a
+  , ReadForeignGenericProduct b
+  ) => ReadForeignGenericProduct (Product a b) where
+  readForeignGenericProduct i f
+        = Product
+      <$> readForeignGenericProduct i f
+      <*> readForeignGenericProduct (i + 1) f
+
+instance rfgpArg ::
+  ( ReadForeign a
+  ) => ReadForeignGenericProduct (Argument a) where
+  readForeignGenericProduct i f = do
+    Argument <$> (read =<< readIndex i f)
+
 class ReadForeignGenericSum a where
   readForeignGenericSum :: Foreign -> F a
 
@@ -74,6 +92,12 @@ instance rfgsRec ::
   readForeignGenericSum f = do
     value :: Record row <- read =<< readProp "value" f
     pure <<< Rec $ recordToFields value
+
+instance rfgsProduct ::
+  ( ReadForeignGenericProduct (Product a b)
+  ) => ReadForeignGenericSum (Product a b) where
+  readForeignGenericSum f =
+    readForeignGenericProduct 0 =<< readProp "value" f
 
 instance rfgsCons ::
   ( IsSymbol name
