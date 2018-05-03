@@ -1,14 +1,14 @@
 {
   "name": "simple-json-generic-sums",
-  "set": "psc-0.11.7",
-  "source": "https://github.com/purescript/package-sets.git",
+  "set": "compiler/0.12",
+  "source": "https://github.com/justinwoo/package-sets.git",
   "depends": [
-    "spec",
+    "record-format",
+    "assert",
     "typelevel-prelude",
     "simple-json",
-    "psci-support",
     "console",
-    "eff",
+    "effect",
     "prelude"
   ]
 }

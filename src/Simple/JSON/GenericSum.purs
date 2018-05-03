@@ -7,43 +7,10 @@ import Control.Monad.Except (throwError)
 import Data.Foreign (F, Foreign, ForeignError(ForeignError), readString)
 import Data.Foreign.Index (readIndex, readProp)
 import Data.Foreign.JSON (parseJSON)
-import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), Field(..), NoArguments(..), Product(..), Rec(..), Sum(..), to)
-import Data.Record (get)
-import Simple.JSON (class ReadForeign, read)
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..), to)
+import Simple.JSON (class ReadForeign, read')
 import Type.Prelude (class IsSymbol, SProxy(..), reflectSymbol)
 import Type.Row (kind RowList)
-
--- to make sure to reuse simple-json record decoding
-class FieldsToRow fields (row :: # Type)
-
-instance fieldFieldsToRow ::
-  ( RowCons name ty () row
-  ) => FieldsToRow (Field name ty) row
-
-instance productFieldsToRow ::
-  ( FieldsToRow a l
-  , FieldsToRow b r
-  , Union l r row
-  ) => FieldsToRow (Product a b) row
-
--- to convert a concrete record to fields for generics-rep to be happy
-class RecordToFields fields (row :: # Type) where
-  recordToFields :: { | row } -> fields
-
-instance rtfField ::
-  ( IsSymbol name
-  , RowCons name ty trash row
-  ) => RecordToFields (Field name ty) row where
-  recordToFields r = Field value
-    where
-      value = get (SProxy :: SProxy name) r
-
-instance rtfProduct ::
-  ( RecordToFields a row
-  , RecordToFields b row
-  ) => RecordToFields (Product a b) row where
-  recordToFields r =
-    Product (recordToFields r) (recordToFields r)
 
 class ReadForeignGenericProduct a where
   readForeignGenericProduct :: Int -> Foreign -> F a
@@ -61,7 +28,7 @@ instance rfgpArg ::
   ( ReadForeign a
   ) => ReadForeignGenericProduct (Argument a) where
   readForeignGenericProduct i f = do
-    Argument <$> (read =<< readIndex i f)
+    Argument <$> (read' =<< readIndex i f)
 
 class ReadForeignGenericSum a where
   readForeignGenericSum :: Foreign -> F a
@@ -82,16 +49,7 @@ instance rfgsArg ::
   ( ReadForeign a
   ) => ReadForeignGenericSum (Argument a) where
   readForeignGenericSum f =
-    Argument <$> (read =<< readProp "value" f)
-
-instance rfgsRec ::
-  ( FieldsToRow fields row
-  , RecordToFields fields row
-  , ReadForeign (Record row)
-  ) => ReadForeignGenericSum (Rec fields) where
-  readForeignGenericSum f = do
-    value :: Record row <- read =<< readProp "value" f
-    pure <<< Rec $ recordToFields value
+    Argument <$> (read' =<< readProp "value" f)
 
 instance rfgsProduct ::
   ( ReadForeignGenericProduct (Product a b)
