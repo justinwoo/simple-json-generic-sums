@@ -1,5 +1,7 @@
 # Simple-JSON Generic Sums
 
+**This might still be useful, but you probably want to look at <https://github.com/justinwoo/purescript-simple-json-generics> instead**
+
 A demo/usable library for decoding sum types using Generics-Rep to decode from { tag, value } JSON.
 
 More of a proof of concept. I do not recommend that anyone would use this over the Variant de/encoding in Simple-JSON. Really, if you read the source of this repo, you should probably realize what all is wrong with this approach.
